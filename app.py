@@ -5,6 +5,7 @@ import sys
 import zipfile
 import shutil
 import subprocess
+import time
 
 sys.path.append('./src')
 from utils import extract_and_clean_all_pdfs, normalize_keyword, keywords_score
@@ -22,7 +23,7 @@ def limpiar_carpeta(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
 
-# 1. Selección de fuente de datos
+# === 1. Selección de fuente de datos ===
 st.header("📁 ¿Cómo deseas cargar los CVs?")
 modo = st.radio(
     "Selecciona una opción:",
@@ -39,23 +40,29 @@ if modo == "Subir un ZIP con mis propios CVs PDF":
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             zip_ref.extractall(pdf_folder)
         st.success("¡CVs extraídos correctamente! Continúa con el análisis.")
-        # Deberías pedir al usuario cargar el archivo etiquetas.csv correspondiente
         etiquetas_csv = st.file_uploader("Sube el archivo etiquetas.csv (archivo de perfiles)", type=["csv"])
         if etiquetas_csv is not None:
             with open(etiquetas_path, "wb") as f:
                 f.write(etiquetas_csv.read())
             st.success("Archivo de etiquetas cargado correctamente.")
+        # Recarga si ambos archivos existen (flujo más cómodo)
+        if os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path):
+            st.info("CVs y etiquetas cargados correctamente. ¡Ahora puedes analizarlos!")
+            time.sleep(0.5)
+            st.experimental_rerun()
 else:
     if st.button("Generar CVs y etiquetas de prueba"):
         subprocess.run(["python", "tools/generador_cvs_etiquetados.py"])
         subprocess.run(["python", "tools/entrenar_clasificador.py"])
         st.success("CVs y modelo de prueba generados correctamente.")
+        time.sleep(0.5)
+        st.experimental_rerun()
 
-# Verifica si hay datos listos para procesar
+# === Verifica si hay datos listos para procesar ===
 datos_listos = os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path)
 
 if datos_listos:
-    # 2. Palabras clave
+    # === 2. Palabras clave ===
     st.header("1️⃣ Palabras clave de filtrado")
     keywords_input = st.text_input(
         "Ingresa las palabras clave separadas por coma (ejemplo: python, docker, .net, ingles(nativo), sql)",
@@ -64,17 +71,17 @@ if datos_listos:
     keywords = [normalize_keyword(k) for k in keywords_input.split(",")]
     st.write("Palabras clave normalizadas:", keywords)
 
-    # 3. Descripción de vacante
+    # === 3. Descripción de vacante ===
     st.header("2️⃣ Descripción de la vacante")
     job_description = st.text_area(
         "Pega aquí la descripción de la vacante:",
         value="Buscamos ingeniero backend con experiencia en Python, .NET, Docker, Linux y nivel de inglés nativo."
     )
 
-    # 4. Número de candidatos
+    # === 4. Número de candidatos ===
     n_top = st.number_input("¿Cuántas plazas deseas mostrar?", min_value=1, max_value=30, value=5)
 
-    # 5. Procesamiento
+    # === 5. Procesamiento ===
     if st.button("Analizar CVs"):
         st.info("Extrayendo y limpiando CVs...")
         cv_texts = extract_and_clean_all_pdfs(pdf_folder)
