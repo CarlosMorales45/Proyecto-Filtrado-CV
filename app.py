@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import pandas as pd
 import sys
+import subprocess
 
 sys.path.append('./src')
 from utils import extract_and_clean_all_pdfs, normalize_keyword, keywords_score
@@ -10,13 +11,25 @@ from embedding import compute_semantic_scores
 
 # Configuración de la página
 st.set_page_config(page_title="Filtrado y Análisis Automatizado de CVs", layout="centered")
-
 st.title("🧠 Filtrado y Análisis Automatizado de CVs usando IA")
 
-# 1. Subida de archivos de CV (opcional si ya tienes el directorio)
+# 1. Verifica/genera automáticamente los datos si no existen
 pdf_folder = 'data/cvs_pdfs'
-if not os.path.exists(pdf_folder):
-    st.error("La carpeta de CVs no existe. Por favor genera los CVs antes de usar la app.")
+etiquetas_path = 'data/etiquetas.csv'
+
+def generar_datos():
+    st.warning("Generando datos de prueba automáticamente...")
+    # Ejecuta scripts de generación y entrenamiento
+    subprocess.run(["python", "tools/generador_cvs_etiquetados.py"])
+    subprocess.run(["python", "tools/entrenar_clasificador.py"])
+    st.success("¡CVs y modelo generados correctamente! Recarga la página para continuar.")
+
+# Si no existe la carpeta de CVs o está vacía, genera los datos
+if not os.path.exists(pdf_folder) or not os.listdir(pdf_folder):
+    generar_datos()
+    st.stop()
+if not os.path.exists(etiquetas_path):
+    generar_datos()
     st.stop()
 
 # 2. Ingreso de palabras clave
