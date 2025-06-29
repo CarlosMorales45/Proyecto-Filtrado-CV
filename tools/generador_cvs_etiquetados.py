@@ -6,14 +6,15 @@ import csv
 from fpdf import FPDF
 
 # === Parámetros generales ===
-N_CVS = 50  # CVs por perfil (ajusta si quieres más)
+N_CVS = 50  # CVs por perfil (ajusta el número de ejemplos que quieras)
 OUTPUT_FOLDER = "data/cvs_pdfs"
 ETIQUETAS_PATH = "data/etiquetas.csv"
 
+# Crea la carpeta de salida si no existe
 if not os.path.exists(OUTPUT_FOLDER):
     os.makedirs(OUTPUT_FOLDER)
 
-# === Definición de perfiles y características ===
+# === Definición de perfiles y características técnicas ===
 perfiles = {
     "backend": {
         "habilidades": ["Python", "Java", "SQL", "C#", ".NET", "Docker", "Linux"],
@@ -53,13 +54,17 @@ perfiles = {
     }
 }
 
+# Listas base para nombres y datos aleatorios
 nombres = ["José Pérez", "Ana Gómez", "Carlos Ruiz", "Sofía Torres", "Miguel Fernández", "Lucía Sánchez", "Daniela Díaz", "María López", "Andrés García"]
 instituciones = ["Universidad Nacional", "Universidad de Ingeniería", "Instituto Tecnológico"]
 empresas = ["TechCorp", "SoftSolutions", "DataWorks", "InfraSystems"]
 niveles_idioma = ["Nativo", "Avanzado", "Intermedio"]
 
 def normaliza_idioma(s):
-    """Convierte a minúsculas, elimina acentos y espacios."""
+    """
+    Convierte a minúsculas, elimina acentos y espacios. 
+    Facilita la coincidencia exacta en análisis posterior.
+    """
     s = s.lower()
     reemplazos = (
         ("á", "a"), ("é", "e"), ("í", "i"), ("ó", "o"), ("ú", "u"), ("ñ", "n")
@@ -70,6 +75,10 @@ def normaliza_idioma(s):
     return s
 
 def generar_cv_texto(nombre, perfil):
+    """
+    Genera el texto simulado de un CV ficticio, alineado al perfil técnico.
+    Incluye habilidades, idiomas (en formato normalizado) y un proyecto relevante.
+    """
     datos = perfiles[perfil]
     habilidades = random.sample(datos["habilidades"], k=min(4, len(datos["habilidades"])))
     proyecto = random.choice(datos["proyectos"])
@@ -116,6 +125,9 @@ Referencias:
     return texto
 
 def guardar_pdf(nombre_archivo, texto):
+    """
+    Genera y guarda un archivo PDF a partir del texto.
+    """
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", size=12)
@@ -144,3 +156,11 @@ with open(ETIQUETAS_PATH, "w", newline="", encoding="utf-8") as f:
     writer.writerows(etiquetas)
 
 print(f"Generados {contador-1} CVs en PDF y archivo de etiquetas guardado en {ETIQUETAS_PATH}")
+
+"""
+Este script genera un conjunto de currículums (CVs) ficticios en PDF, cada uno con su perfil técnico asociado (backend, frontend, data, infraestructura).
+También crea un archivo 'etiquetas.csv' para entrenamiento supervisado.
+
+Ejecútalo cada vez que desees un nuevo set de datos para entrenar/testear el modelo.
+
+"""

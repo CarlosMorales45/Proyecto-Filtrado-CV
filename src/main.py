@@ -1,18 +1,18 @@
-# src/main.py
-
 import os
-from utils import extract_and_clean_all_pdfs, unzip_cvs
+from utils import extract_and_clean_all_pdfs
 from embedding import compute_semantic_scores
 from classifier import load_classifier, predict_profiles
 
 def main():
-    zip_path = os.path.join('..', 'data', 'cvs_ingenieria_sistemas.zip')
+    """
+    Script principal para analizar CVs.
+    - Extrae y limpia los textos de los CVs desde PDFs.
+    - Calcula la similitud semántica entre cada CV y la descripción de la vacante.
+    - Predice el perfil técnico de cada CV usando un clasificador previamente entrenado.
+    - Muestra el top 10 de CVs mejor rankeados.
+    """
+
     pdf_folder = os.path.join('..', 'data', 'cvs_pdfs')
-    
-    # Si la carpeta de PDFs no existe o está vacía, descomprime el ZIP
-    if not os.path.exists(pdf_folder) or not os.listdir(pdf_folder):
-        print("Extrayendo archivos PDF del ZIP...")
-        unzip_cvs(zip_path, pdf_folder)
 
     print("Extrayendo y limpiando los CVs...")
     cv_texts = extract_and_clean_all_pdfs(pdf_folder)
@@ -23,7 +23,7 @@ def main():
     semantic_scores = compute_semantic_scores(cv_texts, job_description)
 
     print("\nCargando clasificador de perfiles técnicos...")
-    clf, vectorizer = load_classifier()  # Asegúrate de tener entrenado el modelo antes
+    clf, vectorizer = load_classifier()
     profiles = predict_profiles(cv_texts, clf, vectorizer)
 
     print("\nResultados (Top 10):\n")
