@@ -1,18 +1,10 @@
-# Archivos de modelo y vectorizador (no subir binarios)
-classifier.pkl
-vectorizer.pkl
-
-# Archivos de datos generados y CVs de prueba
-/data/cvs_pdfs/
-/data/etiquetas.csv
-
-# Archivos temporales de Python y caché
+# --- Archivos temporales de Python y caché ---
 __pycache__/
 *.pyc
 
-# Archivos de entorno de Jupyter (opcional, si hay checkpoints)
+# --- Checkpoints de Jupyter ---
 .ipynb_checkpoints/
 
-# Archivos de entorno virtual (si llegas a usarlo)
+# --- Entornos virtuales ---
 .venv/
 env/
