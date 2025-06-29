@@ -5,6 +5,7 @@ import sys
 import zipfile
 import shutil
 import subprocess
+import time
 
 sys.path.append('./src')
 from utils import extract_and_clean_all_pdfs, normalize_keyword, keywords_score
@@ -22,10 +23,7 @@ def limpiar_carpeta(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
 
-if 'datos_listos' not in st.session_state:
-    st.session_state.datos_listos = False
-
-# === 1. Selección de fuente de datos ===
+# 1. Selección de fuente de datos
 st.header("📁 ¿Cómo deseas cargar los CVs?")
 modo = st.radio(
     "Selecciona una opción:",
@@ -42,25 +40,29 @@ if modo == "Subir un ZIP con mis propios CVs PDF":
         with zipfile.ZipFile(zip_file, "r") as zip_ref:
             zip_ref.extractall(pdf_folder)
         st.success("¡CVs extraídos correctamente! Continúa con el análisis.")
+        # Pedir etiquetas.csv
         etiquetas_csv = st.file_uploader("Sube el archivo etiquetas.csv (archivo de perfiles)", type=["csv"])
         if etiquetas_csv is not None:
             with open(etiquetas_path, "wb") as f:
                 f.write(etiquetas_csv.read())
             st.success("Archivo de etiquetas cargado correctamente.")
-            # Marca como listos los datos para mostrar análisis
-            st.session_state.datos_listos = True
-elif modo == "Generar CVs de prueba automáticamente":
+else:
     if st.button("Generar CVs y etiquetas de prueba"):
+        st.info("Generando CVs de prueba, esto puede tomar unos segundos...")
         subprocess.run(["python", "tools/generador_cvs_etiquetados.py"])
         subprocess.run(["python", "tools/entrenar_clasificador.py"])
-        st.success("CVs y modelo de prueba generados correctamente.")
-        st.session_state.datos_listos = True
+        # Espera breve y chequea existencia
+        for _ in range(5):
+            if os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path):
+                st.success("CVs y modelo de prueba generados correctamente.")
+                st.experimental_rerun()
+            time.sleep(1)
+        st.error("Hubo un problema generando los CVs. Intenta de nuevo.")
 
-# === Verifica si hay datos listos para procesar ===
-datos_listos = (os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path)) or st.session_state.get('datos_listos', False)
+# Verifica si hay datos listos para procesar
+datos_listos = os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path)
 
 if datos_listos:
-    # === 2. Palabras clave ===
     st.header("1️⃣ Palabras clave de filtrado")
     keywords_input = st.text_input(
         "Ingresa las palabras clave separadas por coma (ejemplo: python, docker, .net, ingles(nativo), sql)",
@@ -69,17 +71,14 @@ if datos_listos:
     keywords = [normalize_keyword(k) for k in keywords_input.split(",")]
     st.write("Palabras clave normalizadas:", keywords)
 
-    # === 3. Descripción de vacante ===
     st.header("2️⃣ Descripción de la vacante")
     job_description = st.text_area(
         "Pega aquí la descripción de la vacante:",
         value="Buscamos ingeniero backend con experiencia en Python, .NET, Docker, Linux y nivel de inglés nativo."
     )
 
-    # === 4. Número de candidatos ===
     n_top = st.number_input("¿Cuántas plazas deseas mostrar?", min_value=1, max_value=30, value=5)
 
-    # === 5. Procesamiento ===
     if st.button("Analizar CVs"):
         st.info("Extrayendo y limpiando CVs...")
         cv_texts = extract_and_clean_all_pdfs(pdf_folder)
@@ -95,7 +94,6 @@ if datos_listos:
         clf, vectorizer = load_classifier()
         profiles = predict_profiles(cv_texts, clf, vectorizer)
 
-        # Tabla y visualización
         tabla = []
         for pdf in cv_texts.keys():
             kw_score, found_keywords = kw_results.get(pdf, (0, []))
