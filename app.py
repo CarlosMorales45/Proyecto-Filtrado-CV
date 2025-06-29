@@ -5,7 +5,6 @@ import sys
 import zipfile
 import shutil
 import subprocess
-import time
 
 sys.path.append('./src')
 from utils import extract_and_clean_all_pdfs, normalize_keyword, keywords_score
@@ -22,6 +21,9 @@ def limpiar_carpeta(folder):
     if os.path.exists(folder):
         shutil.rmtree(folder)
     os.makedirs(folder)
+
+if 'datos_listos' not in st.session_state:
+    st.session_state.datos_listos = False
 
 # === 1. Selección de fuente de datos ===
 st.header("📁 ¿Cómo deseas cargar los CVs?")
@@ -45,21 +47,17 @@ if modo == "Subir un ZIP con mis propios CVs PDF":
             with open(etiquetas_path, "wb") as f:
                 f.write(etiquetas_csv.read())
             st.success("Archivo de etiquetas cargado correctamente.")
-        # Recarga si ambos archivos existen (flujo más cómodo)
-        if os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path):
-            st.info("CVs y etiquetas cargados correctamente. ¡Ahora puedes analizarlos!")
-            time.sleep(0.5)
-            st.experimental_rerun()
-else:
+            # Marca como listos los datos para mostrar análisis
+            st.session_state.datos_listos = True
+elif modo == "Generar CVs de prueba automáticamente":
     if st.button("Generar CVs y etiquetas de prueba"):
         subprocess.run(["python", "tools/generador_cvs_etiquetados.py"])
         subprocess.run(["python", "tools/entrenar_clasificador.py"])
         st.success("CVs y modelo de prueba generados correctamente.")
-        time.sleep(0.5)
-        st.experimental_rerun()
+        st.session_state.datos_listos = True
 
 # === Verifica si hay datos listos para procesar ===
-datos_listos = os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path)
+datos_listos = (os.path.exists(pdf_folder) and os.listdir(pdf_folder) and os.path.exists(etiquetas_path)) or st.session_state.get('datos_listos', False)
 
 if datos_listos:
     # === 2. Palabras clave ===
