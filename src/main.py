@@ -1,3 +1,5 @@
+# src/main.py
+
 import os
 from utils import extract_and_clean_all_pdfs
 from embedding import compute_semantic_scores
